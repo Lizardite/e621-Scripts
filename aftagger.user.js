@@ -19,18 +19,12 @@
 var h = document.createElement("script");
 
 h.innerHTML = "(" + function() {
-	var options = {
-		0: "None",
-		1: "Anthro",
-		2: "Feral"
-	};
+	var options = [
+		{ text: "None", tags: "" },
+		{ text: "Anthro", tags: "anthro" },
+		{ text: "Feral", tags: "feral" }
+	];
 	var defaultOption = 1;
-
-	var optionTags = {
-		0: "",
-		1: "anthro",
-		2: "feral"
-	}
 
 	var createSidebarSection = function(title) {
 		var div = document.createElement("div");
@@ -47,10 +41,10 @@ h.innerHTML = "(" + function() {
 	var buildSelector = function(options, defaultOption) {
 		var selector = document.createElement("select");
 
-		for (var optionId in options) {
+		for (var optionId = 0; optionId < options.length; optionId++) {
 			var option = document.createElement("option");
 			option.value = optionId;
-			option.innerText = options[optionId];
+			option.innerText = options[optionId].text;
 			if (defaultOption == optionId) {
 				option.selected = 1;
 			}
@@ -89,9 +83,10 @@ h.innerHTML = "(" + function() {
 	var sendButton = document.createElement("button");
 	sendButton.onclick = function(e) {
 		var postData = [];
-		var postElems = document.getElementsByClassName("mtt-posttype");
+		var postElems = document.getElementsByClassName("thumb");
 		for (var i = 0; i < postElems.length; i++) {
-			var tagScript = optionTags[postElems[i].value];
+			if (postElems[i].classList.contains("blacklisted")) continue;
+			var tagScript = options[postElems[i].getElementsByClassName("mtt-posttype")[0].value].tags;
 			if (tagScript) {
 				var postId = getElementPost(postElems[i]);
 				if (postId !== false) {
