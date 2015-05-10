@@ -1,6 +1,6 @@
 // ==UserScript== 
 // @name          e621 AFTagger
-// @version       1.1
+// @version       1.1.1
 // @description   e621 quick anthro/feral tagger
 // @author        Lizardite
 
@@ -19,6 +19,15 @@
 var h = document.createElement("script");
 
 h.innerHTML = "(" + function() {
+	if (!Array.prototype.addAll) {
+		Array.prototype.addAll = function(toAdd) {
+			var me = this;
+			toAdd.forEach(function(i) {
+				me.push(i);
+			});
+		}
+	}
+
 	var createSidebarSection = function(title) {
 		var div = document.createElement("div");
 		div.style.marginBottom = "1em";
@@ -66,11 +75,11 @@ h.innerHTML = "(" + function() {
 		}
 	}
 
-	var createSelectors = function(tags) {
-		var posts = document.getElementsByClassName("thumb");
+	var createSelectors = function() {
+		var options = new Array("---");
+		options.addAll(tags);
 
-		tags = "---\n" + tags;
-		tags = tags.trim().replace(/[\t ]+/g, " ").replace(/\n+/g, "\n").split("\n");
+		var posts = document.getElementsByClassName("thumb");
 
 		for (var i = 0; i < posts.length; i++) {
 			var score = posts[i].getElementsByClassName("post-score")[0];
@@ -78,7 +87,7 @@ h.innerHTML = "(" + function() {
 			score.style.width = "100%";
 			posts[i].appendChild(score);
 
-			var selector = buildSelector(tags, tags.length == 1 ? 0 : 1);
+			var selector = buildSelector(options, options.length == 1 ? 0 : 1);
 			selector.className = "mtt-posttype";
 			score.appendChild(selector);
 		}
@@ -86,18 +95,24 @@ h.innerHTML = "(" + function() {
 
 	var sendHolder = createSidebarSection("AFTagger");
 
-	var tags = Cookie.get("aftagger-tags");
-	if (!tags) {
-		tags = "anthro\nferal\nhuman hybrid";
+	var tags = Cookie.get("aftagger-tags").split("\n");
+	if (tags[0] == "") {
+		tags = [
+			"anthro",
+			"feral",
+			"human hybrid"
+		];
 	}
-	createSelectors(tags);
+	createSelectors();
 
 	var tagsBox = document.createElement("textarea");
-	tagsBox.value = tags;
+	tagsBox.value = tags.join("\n");
 	tagsBox.onchange = function(e) {
+		tags = e.target.value.trim().replace(/[\t ]+/g, " ").replace(/\n+/g, "\n").split("\n");
+		Cookie.put("aftagger-tags", tags.join("\n"));
+
 		removeSelectors();
-		createSelectors(e.target.value);
-		Cookie.put("aftagger-tags", e.target.value);
+		createSelectors();
 	}
 	sendHolder.appendChild(tagsBox);
 
@@ -107,12 +122,10 @@ h.innerHTML = "(" + function() {
 		var postElems = document.getElementsByClassName("thumb");
 		for (var i = 0; i < postElems.length; i++) {
 			if (postElems[i].classList.contains("blacklisted")) continue;
-			var tagScript = options[postElems[i].getElementsByClassName("mtt-posttype")[0].value].tags;
-			if (tagScript) {
+			var optionId = postElems[i].getElementsByClassName("mtt-posttype")[0].value;
+			if (tags[optionId - 1]) {
 				var postId = getElementPost(postElems[i]);
-				if (postId !== false) {
-					TagScript.run(postId, tagScript);
-				}
+				TagScript.run(postId, tags[optionId - 1]);
 			}
 		}
 	}
